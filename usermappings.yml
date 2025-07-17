@@ -1,0 +1,5 @@
+users:
+  "etienne@supabase.io":
+    roles:
+      - readonly
+      - postgres
