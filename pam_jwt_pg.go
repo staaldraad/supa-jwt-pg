@@ -58,7 +58,7 @@ func pam_sm_authenticate_go(pamh *C.pam_handle_t, flags C.int, argc C.int, argv 
 
 	// get the remote host from PAM_RHOST
 	var cRhost *C.char
-	if errnum := C.pam_get_item(pamh, &cRhost, nil); errnum != C.PAM_SUCCESS {
+	if errnum := C.pam_get_item(pamh, C.PAM_RHOST, (*unsafe.Pointer)(unsafe.Pointer(&cRhost))); errnum != C.PAM_SUCCESS {
 		pamSyslog(pamh, syslog.LOG_ERR, "failed to get rhost: %v", pamStrError(pamh, errnum))
 		return errnum
 	}
@@ -97,9 +97,9 @@ func pam_sm_authenticate_go(pamh *C.pam_handle_t, flags C.int, argc C.int, argv 
 	token := C.GoString(cToken)
 
 	// get JWKS
-	auth, err := discoverAuthenticator(ctx, cfg.JwksURL, cfg.MappingFile)
+	auth, err := discoverAuthenticator(ctx, cfg.JwksURL, cfg.MappingFile, token)
 	if err != nil {
-		pamSyslog(pamh, syslog.LOG_ERR, "failed to discover jwks: %v", err)
+		pamSyslog(pamh, syslog.LOG_ERR, "failed to discover authenticator: %v", err)
 		return C.PAM_AUTH_ERR
 	}
 
