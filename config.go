@@ -6,6 +6,9 @@ import (
 )
 
 type config struct {
+	// Trust local connections, emulating the trust you could set via pg_hba.conf
+	TrustLocal bool
+
 	// URL where to find .well-known/jwks.json
 	JwksURL string
 
@@ -23,6 +26,8 @@ func configFromArgs(args []string) (*config, error) {
 		}
 
 		switch parts[0] {
+		case "trustLocal":
+			c.TrustLocal = true
 		case "jwks":
 			c.JwksURL = parts[1]
 		case "mappings":

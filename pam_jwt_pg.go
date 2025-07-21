@@ -38,7 +38,7 @@ func pam_sm_authenticate_go(pamh *C.pam_handle_t, flags C.int, argc C.int, argv 
 	for i := 0; i < int(argc); i++ {
 		args[i] = C.GoString(C.argv_i(argv, C.int(i)))
 	}
-	pamSyslog(pamh, syslog.LOG_INFO, "Loaded pam module", nil)
+	pamSyslog(pamh, syslog.LOG_INFO, "Loaded pam module")
 	// Parse config
 	cfg, err := configFromArgs(args)
 	if err != nil {
@@ -55,6 +55,25 @@ func pam_sm_authenticate_go(pamh *C.pam_handle_t, flags C.int, argc C.int, argv 
 		pamSyslog(pamh, syslog.LOG_ERR, "missing required option: mappings")
 		return C.PAM_SERVICE_ERR
 	}
+
+	// get the remote host from PAM_RHOST
+	var cRhost *C.char
+	if errnum := C.pam_get_item(pamh, &cRhost, nil); errnum != C.PAM_SUCCESS {
+		pamSyslog(pamh, syslog.LOG_ERR, "failed to get rhost: %v", pamStrError(pamh, errnum))
+		return errnum
+	}
+
+	rhost := C.GoString(cRhost)
+	pamSyslog(pamh, syslog.LOG_WARNING, "connection from %s", rhost)
+
+	// if localhost connection and configuration is to trust localhost
+	// emmulate the pg_hba.conf setting
+	// host all all 127.0.0.1/32 trust
+	// host all all ::1/0 trust
+	// if cfg.TrustLocal && (rhost == "127.0.0.1" || rhost == "::1") {
+	// 	pamSyslog(pamh, syslog.LOG_INFO, "local connection trusted")
+	// 	return c.PAM_SUCCESS
+	// }
 
 	// Get (or prompt for) user
 	var cUser *C.char

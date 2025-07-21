@@ -1,0 +1,20 @@
+To verify passwords from PAM, in order to allow both password and SSO login to work for the same role. The following can be done:
+
+create new entry in pg_hba.conf
+
+host    authdbnotexist  all             127.0.0.1/32            scram-sha-256
+host    all             all             127.0.0.1/32            trust
+
+Then in the pam module, try log into the database authdbnotexist with the role and password supplied.
+
+For invalid user or password: password authentication failed for user "blah"
+For valid credentials (not permitted login): role "blah" is not permitted to log in 
+For valid credentials (permitted login): database "authdbnotexist" does not exist
+
+Thus we can determine that the user + password is correct.
+
+This allows retaining the pg_hba.conf entry to allow local trust
+
+host    all             all             127.0.0.1/32            trust
+
+while still allowing the PAM module to do password verification. Without this extra step, the PAM module would always successfully auth because of local trust.
